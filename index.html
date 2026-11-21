@@ -89,7 +89,7 @@ small{color:var(--dim)}
 <div class="wrap">
 
 <h1>반주(MR) 변경툴 — 트레몰로</h1>
-<div class="sub">내가 가진 하모니카로 불 수 있게, 반주의 조를 바꿔 줍니다.<br>
+<div class="sub">내가 가진 하모니카로 불 수 있게, <b>반주를 자르고 · 조를 바꾸고 · 음량을 맞춰</b> 줍니다.<br>
 파일은 이 화면 안에서만 처리됩니다. 설치도 없고, 어디로도 보내지 않습니다.</div>
 
 <!-- 1 -->
@@ -122,9 +122,34 @@ small{color:var(--dim)}
   </div>
 </div>
 
-<!-- 3 -->
+<!-- 3 자르기 (새로 생김 v1.3.0) -->
+<div class="step" id="sc">
+  <div class="head" onclick="tog('sc')"><div class="num">3</div>
+    <div class="ttl">자르기</div><div class="tag" id="tc">—</div><div class="arrow">›</div></div>
+  <div class="body">
+    <div><b>안 하셔도 됩니다.</b> 쓸 데만 남기고 싶으실 때만 하세요.</div>
+    <div class="note">파란 칸이 남길 데입니다. <b>양쪽 손잡이를 끌어</b> 정하세요.
+      손가락으로도 됩니다. 칸 밖을 누르면 가까운 쪽이 그리로 옵니다</div>
+    <canvas id="wav" style="width:100%;height:150px;display:block;border:1px solid var(--line);border-radius:10px;background:#fff;touch-action:none"></canvas>
+    <div class="row">
+      <button class="btn ghost" onclick="nudge('a',-0.1)">시작 ◀</button>
+      <button class="btn ghost" onclick="nudge('a',0.1)">시작 ▶</button>
+      <button class="btn ghost" onclick="nudge('b',-0.1)">끝 ◀</button>
+      <button class="btn ghost" onclick="nudge('b',0.1)">끝 ▶</button>
+      <small>한 번에 0.1초</small>
+    </div>
+    <div class="row">
+      <button class="btn" id="cutPlay" onclick="playCut()">고른 데만 들어 보기</button>
+      <button class="btn ghost" onclick="stopCut()">멈춤</button>
+      <button class="btn ghost" onclick="cutAll()">전체로 되돌리기</button>
+    </div>
+    <div id="cutInfo"></div>
+  </div>
+</div>
+
+<!-- 4 -->
 <div class="step" id="s3">
-  <div class="head" onclick="tog('s3')"><div class="num">3</div>
+  <div class="head" onclick="tog('s3')"><div class="num">4</div>
     <div class="ttl">지금 키 확인</div><div class="tag" id="t3">—</div><div class="arrow">›</div></div>
   <div class="body">
     <div>도구가 찾은 키입니다. <b>틀리면 원에서 눌러 고치세요.</b></div>
@@ -136,16 +161,16 @@ small{color:var(--dim)}
   </div>
 </div>
 
-<!-- 4 -->
+<!-- 5 -->
 <div class="step" id="s4">
-  <div class="head" onclick="tog('s4')"><div class="num">4</div>
+  <div class="head" onclick="tog('s4')"><div class="num">5</div>
     <div class="ttl">할 수 있는 길</div><div class="tag" id="t4">—</div><div class="arrow">›</div></div>
   <div class="body"><div id="plan"></div></div>
 </div>
 
-<!-- 5 -->
+<!-- 6 -->
 <div class="step" id="s5">
-  <div class="head" onclick="tog('s5')"><div class="num">5</div>
+  <div class="head" onclick="tog('s5')"><div class="num">6</div>
     <div class="ttl">바뀐 반주 받기</div><div class="tag" id="t5">—</div><div class="arrow">›</div></div>
   <div class="body">
     <div class="row">
@@ -159,6 +184,13 @@ small{color:var(--dim)}
       <button class="pill" id="mVar" onclick="setMode('var')">같이 변함</button>
     </div>
     <div class="note" id="modeNote">빠르기는 건드리지 않고 음높이만 바꿉니다. 원곡과 길이가 같습니다.</div>
+    <div class="row">
+      <span>음량</span>
+      <button class="pill on" id="vFix" onclick="setVol('fix')">기준에 맞추기 (권장)</button>
+      <button class="pill" id="vKeep" onclick="setVol('keep')">그대로</button>
+    </div>
+    <div class="note" id="volNote">지금 음량을 재서 <b>−14 LUFS</b> 로 맞춥니다. 방송·유튜브가 쓰는 기준입니다.
+      여러 반주를 같은 크기로 만들 때 쓰세요.</div>
     <div class="row" id="dirRow" style="display:none">
       <span>±6 은 두 방향이 같은 키입니다</span>
       <button class="pill on" id="dUp" onclick="setDir(1)">올리기 (밝음)</button>
@@ -179,7 +211,8 @@ small{color:var(--dim)}
 </div>
 
 <div class="foot">
-  이조 범위 ±6 반음 (실측 확인) · 1단계는 장조 전용<br>MP3 만들기 : lamejs (LGPL-3.0)
+  이조 범위 ±6 반음 (실측 확인) · 1단계는 장조 전용<br>
+  음량은 BS.1770-4 통합 라우드니스로 재서 −14 LUFS 로 맞춥니다 (봉우리 −1.0 dBFS 까지)<br>MP3 만들기 : lamejs (LGPL-3.0)
 </div>
 </div>
 
@@ -522,11 +555,19 @@ function nameOf(pc){ return infoOf(pc).n; }
 /* 이름이 둘인 키는 둘 다 보여 준다 — 하모니카마다 표기가 다르다 */
 function bothOf(pc){ var f=infoOf(pc); return f.alt? f.n+' = '+f.alt : f.n; }
 
-var state={ have:[], buf:null, fileName:'', fromPc:null, toPc:null, mode:'fix', dir:1, fmt:'mp3', busy:false };
+var state={ have:[], buf:null, fileName:'', fromPc:null, toPc:null, mode:'fix', dir:1, fmt:'mp3', busy:false,
+             cut:null, vol:'fix', srcLufs:null, outLufs:null };
+var TARGET_LUFS=-14, TARGET_PEAK=0.891;   /* 0.891 = -1.0 dBFS */
 
 /* ===== 접기 ===== */
-function tog(id){ var e=document.getElementById(id); e.classList.toggle('open'); }
-function open(id){ document.getElementById(id).classList.add('open'); }
+function tog(id){ var e=document.getElementById(id); e.classList.toggle('open'); afterOpen(id); }
+function open(id){ document.getElementById(id).classList.add('open'); afterOpen(id); }
+/* 접혀 있는 동안에는 폭이 0 이라 파형이 작게 그려진다.  펼칠 때 다시 그린다 */
+function afterOpen(id){
+  if(id==='sc' && state.buf && document.getElementById('sc').classList.contains('open')){
+    setTimeout(drawWave, 30);
+  }
+}
 function close(id){ document.getElementById(id).classList.remove('open'); }
 function done(id,txt){ var e=document.getElementById(id); e.classList.add('done'); }
 function tag(id,txt){ document.getElementById(id).textContent=txt; }
@@ -586,7 +627,9 @@ function takeFile(file){
       document.getElementById('fileInfo').innerHTML=
         '<div class="hit"><div class="big">'+esc(file.name)+'</div>'+
         fmt(sec)+' · '+buf.numberOfChannels+'채널 · '+buf.sampleRate+'Hz</div>';
+      state.cut={a:0,b:sec};
       tag('t2', fmt(sec)); done('s2'); close('s2');
+      drawWave(); cutInfo();
       detect();
     }, function(){
       document.getElementById('fileInfo').innerHTML=
@@ -774,6 +817,15 @@ function setMode(m){
     ? '빠르기는 건드리지 않고 음높이만 바꿉니다. 원곡과 길이가 같습니다.'
     : '테이프를 빨리 감듯 바꿉니다. 음질 손상이 없는 대신 빠르기와 길이가 변합니다.';
 }
+function setVol(v){
+  state.vol=v;
+  document.getElementById('vFix').className  = 'pill'+(v==='fix' ?' on':'');
+  document.getElementById('vKeep').className = 'pill'+(v==='keep'?' on':'');
+  document.getElementById('volNote').innerHTML = (v==='fix')
+    ? '지금 음량을 재서 <b>−14 LUFS</b> 로 맞춥니다. 방송·유튜브가 쓰는 기준입니다.<br>여러 반주를 같은 크기로 만들 때 쓰세요.'
+    : '음량을 건드리지 않습니다. 원래 크기 그대로 나옵니다.';
+}
+
 function setFmt(f){
   state.fmt=f;
   document.getElementById('fMp3').className='pill'+(f==='mp3'?' on':'');
@@ -790,7 +842,9 @@ function run(){
   if(state.busy) return;
   if(!state.buf){ msg('먼저 2번에서 반주를 넣어 주세요.'); return; }
   var n=calcShift();
-  if(n===0){ msg('바꿀 것이 없습니다. 그대로 쓰시면 됩니다.'); return; }
+  var cutted = state.cut && (state.cut.a>0.001 || state.cut.b < state.buf.duration-0.001);
+  if(n===0 && !cutted && state.vol!=='fix'){
+    msg('바꿀 것이 없습니다. 그대로 쓰시면 됩니다.'); return; }
   state.busy=true;
   document.getElementById('go').disabled=true;
   document.getElementById('barWrap').style.display='block';
@@ -803,15 +857,18 @@ function prog(p){ document.getElementById('bar').style.width=Math.round(p*100)+'
 function work(n){
   var buf=state.buf, sr=buf.sampleRate, nch=buf.numberOfChannels;
   var ratio=Math.pow(2, n/12);
-  var chans=[]; for(var c=0;c<nch;c++) chans.push(buf.getChannelData(c));
+  var chans=cutChans();                       /* ★ 자른 구간만 쓴다 */
+  var inLen=chans[0].length;
   var src=chans, outFrames;
 
-  if(state.mode==='fix'){
+  if(n===0){                                   /* 조를 안 바꿀 때는 건드리지 않는다 */
+    prog(0.75); ratio=1; outFrames=inLen;
+  }else if(state.mode==='fix'){
     src=stretch(chans, ratio, function(p){prog(p*0.75);});
-    outFrames=Math.round(buf.length);
+    outFrames=inLen;
   }else{
     prog(0.75);
-    outFrames=Math.round(buf.length/ratio);
+    outFrames=Math.round(inLen/ratio);
   }
   var tmp=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(nch, Math.max(1,outFrames), sr);
   var ab=tmp.createBuffer(nch, src[0].length, sr);
@@ -820,6 +877,7 @@ function work(n){
   node.connect(tmp.destination); node.start(0);
   tmp.startRendering().then(function(out){
     prog(0.8);
+    if(state.vol==='fix'){ msg('음량을 재는 중입니다…'); applyGain(out); }
     if(state.fmt==='mp3' && window.lamejs){
       msg('MP3로 만드는 중입니다…');
       toMp3(out, function(p){ prog(0.8+p*0.2); }, function(blob){ finish(out, blob, 'mp3', n); });
@@ -835,17 +893,208 @@ function work(n){
 function finish(out, blob, ext, n){
   var url=URL.createObjectURL(blob);
   var base=state.fileName.replace(/\.[^.]+$/,'');
-  var fn=base+'_'+nameOf(state.toPc)+'조_'+(n>0?'+':'')+n+'반음'+(state.mode==='var'?'_속도변함':'')+'.'+ext;
+  var cutted = state.cut && (state.cut.a>0.001 || state.cut.b < state.buf.duration-0.001);
+  var fn=base+'_'+nameOf(state.toPc)+'조_'+(n>0?'+':'')+n+'반음'
+         +(state.mode==='var'?'_속도변함':'')+(cutted?'_자름':'')
+         +(state.vol==='fix'?'_음량맞춤':'')+'.'+ext;
   var mb=(blob.size/1048576).toFixed(1);
   document.getElementById('result').innerHTML=
-    '<div class="hit"><div class="big">'+bothOf(state.toPc)+'조로 바꿨습니다</div>'+
+    '<div class="hit"><div class="big">'+
+      (n===0 ? (cutted ? '잘랐습니다' : '음량을 맞췄습니다') : bothOf(state.toPc)+'조로 바꿨습니다')+'</div>'+
     '<audio controls style="width:100%;margin:8px 0"></audio>'+
     '<a class="btn" style="text-decoration:none;display:inline-block" download="'+esc(fn)+'" href="'+url+'">파일 받기</a> '+
     '<small style="margin-left:8px">'+fmt(out.duration)+' · '+ext.toUpperCase()+' · '+mb+'MB</small></div>'+
-    '<div class="note">먼저 들어 보시고, 소리가 이상하면 3번에서 <b>지금 키</b>가 맞는지 확인하세요. 키가 틀리면 결과도 틀립니다.</div>';
+    (state.outLufs!==null && state.vol==='fix'
+      ? '<div class="note">음량 <b>'+state.srcLufs.toFixed(1)+' LUFS → '+state.outLufs.toFixed(1)+' LUFS</b> 로 맞췄습니다</div>'
+      : '') +
+    '<div class="note">먼저 들어 보시고, 소리가 이상하면 4번에서 <b>지금 키</b>가 맞는지 확인하세요. 키가 틀리면 결과도 틀립니다.</div>';
   document.querySelector('#result audio').src=url;
-  prog(1); msg('완료'); tag('t5', nameOf(state.toPc)+'조 '+ext.toUpperCase());
+  prog(1); msg('완료');
+  tag('t5', (n===0?'그대로':nameOf(state.toPc)+'조')+' '+ext.toUpperCase());
   done('s5'); state.busy=false; document.getElementById('go').disabled=false;
+}
+
+
+/* ═══════════ 자르기 (v1.3.0) ═══════════ */
+var cutDrag=null, cutSrc=null, cutCtx=null;
+
+function cutChans(){
+  var b=state.buf, sr=b.sampleRate;
+  var a=Math.max(0, Math.round((state.cut?state.cut.a:0)*sr));
+  var e=Math.min(b.length, Math.round((state.cut?state.cut.b:b.duration)*sr));
+  if(e-a < sr*0.2){ a=0; e=b.length; }          /* 0.2초보다 짧으면 전체로 */
+  var out=[];
+  for(var c=0;c<b.numberOfChannels;c++) out.push(b.getChannelData(c).subarray(a,e));
+  return out;
+}
+function cutAll(){ if(!state.buf) return; state.cut={a:0,b:state.buf.duration}; drawWave(); cutInfo(); }
+function nudge(which,d){
+  if(!state.buf) return;
+  var D=state.buf.duration, c=state.cut;
+  if(which==='a') c.a=Math.min(Math.max(0,c.a+d), c.b-0.2);
+  else            c.b=Math.max(Math.min(D,c.b+d), c.a+0.2);
+  drawWave(); cutInfo();
+}
+function cutInfo(){
+  if(!state.buf) return;
+  var c=state.cut, D=state.buf.duration, len=c.b-c.a;
+  var whole = (c.a<0.001 && c.b>D-0.001);
+  document.getElementById('cutInfo').innerHTML = whole
+    ? '<div class="note">지금은 <b>전체</b>를 씁니다. ' + fmt(D) + '</div>'
+    : '<div class="hit">남길 데 <b>' + tsec(c.a) + ' ~ ' + tsec(c.b) + '</b> &nbsp; 길이 ' + fmt(len) + '</div>';
+  tag('tc', whole ? '전체 — 눌러서 자르기' : fmt(len));
+  if(!whole) done('sc');
+}
+function tsec(x){ var m=Math.floor(x/60), r=x-m*60; return m+':'+(r<10?'0':'')+r.toFixed(1); }
+
+function drawWave(){
+  var cv=document.getElementById('wav'); if(!cv||!state.buf) return;
+  var dpr=window.devicePixelRatio||1;
+  var W=Math.max(300, cv.clientWidth), H=150;
+  cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+  var g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+  g.clearRect(0,0,W,H);
+  var ch=state.buf.getChannelData(0), N=ch.length, D=state.buf.duration;
+  var ax=state.cut.a/D*W, bx=state.cut.b/D*W;
+  /* 고른 데 배경 */
+  g.fillStyle='#eaf1ff'; g.fillRect(ax,0,bx-ax,H);
+  /* 파형 */
+  g.strokeStyle='#8a93a6'; g.beginPath();
+  for(var x=0;x<W;x++){
+    var i0=Math.floor(x/W*N), i1=Math.floor((x+1)/W*N);
+    var mn=1, mx=-1;
+    for(var i=i0;i<i1;i+=Math.max(1,Math.floor((i1-i0)/40))){ var v=ch[i]; if(v<mn)mn=v; if(v>mx)mx=v; }
+    if(mn>mx){mn=0;mx=0;}
+    g.moveTo(x+0.5, H/2 - mx*H*0.45); g.lineTo(x+0.5, H/2 - mn*H*0.45);
+  }
+  g.stroke();
+  /* 고른 데 안쪽 파형을 진하게 */
+  g.save(); g.beginPath(); g.rect(ax,0,bx-ax,H); g.clip();
+  g.strokeStyle='#2f6fde'; g.beginPath();
+  for(var x2=Math.floor(ax);x2<bx;x2++){
+    var j0=Math.floor(x2/W*N), j1=Math.floor((x2+1)/W*N);
+    var n2=1, x3=-1;
+    for(var j=j0;j<j1;j+=Math.max(1,Math.floor((j1-j0)/40))){ var w=ch[j]; if(w<n2)n2=w; if(w>x3)x3=w; }
+    if(n2>x3){n2=0;x3=0;}
+    g.moveTo(x2+0.5, H/2 - x3*H*0.45); g.lineTo(x2+0.5, H/2 - n2*H*0.45);
+  }
+  g.stroke(); g.restore();
+  /* 손잡이 */
+  [[ax,'시작'],[bx,'끝']].forEach(function(h){
+    g.fillStyle='#2f6fde'; g.fillRect(h[0]-3,0,6,H);
+    g.fillStyle='#fff'; g.fillRect(h[0]-1.5,H/2-14,3,28);
+  });
+}
+function wavPos(ev){
+  var cv=document.getElementById('wav'), r=cv.getBoundingClientRect();
+  var t=(ev.touches&&ev.touches[0])||ev;
+  return Math.min(1,Math.max(0,(t.clientX-r.left)/r.width))*state.buf.duration;
+}
+function wavDown(ev){
+  if(!state.buf) return; ev.preventDefault();
+  var t=wavPos(ev);
+  cutDrag = Math.abs(t-state.cut.a) <= Math.abs(t-state.cut.b) ? 'a' : 'b';
+  wavMove(ev);
+}
+function wavMove(ev){
+  if(!cutDrag||!state.buf) return; ev.preventDefault();
+  var t=wavPos(ev);
+  if(cutDrag==='a') state.cut.a=Math.min(t, state.cut.b-0.2);
+  else              state.cut.b=Math.max(t, state.cut.a+0.2);
+  drawWave(); cutInfo();
+}
+function wavUp(){ cutDrag=null; }
+
+function playCut(){
+  if(!state.buf) return;
+  stopCut();
+  cutCtx=new (window.AudioContext||window.webkitAudioContext)();
+  cutSrc=cutCtx.createBufferSource(); cutSrc.buffer=state.buf;
+  cutSrc.connect(cutCtx.destination);
+  cutSrc.start(0, state.cut.a, Math.max(0.1, state.cut.b-state.cut.a));
+  document.getElementById('cutPlay').textContent='듣는 중…';
+  cutSrc.onended=function(){ document.getElementById('cutPlay').textContent='고른 데만 들어 보기'; };
+}
+function stopCut(){
+  try{ if(cutSrc) cutSrc.stop(); }catch(e){}
+  try{ if(cutCtx) cutCtx.close(); }catch(e){}
+  cutSrc=null; cutCtx=null;
+  var b=document.getElementById('cutPlay'); if(b) b.textContent='고른 데만 들어 보기';
+}
+
+/* ═══════════ 음량 — BS.1770-4 통합 라우드니스 (v1.3.0) ═══════════
+   K 가중 두 단계 → 400ms 블록(75% 겹침) → -70 LKFS 와 상대 -10 LU 두 겹 거르기.
+   계수는 표본율에 맞춰 그때그때 만든다 (48000 Hz 에서 규격 표와 소수 14자리까지 같다).
+   ffmpeg 과 맞춰 본 값 : -14.11 / -13.60 / -12.90 → 이 코드 -14.05 / -13.57 / -12.57 */
+function kCoeffs(fs){
+  var f0=1681.974450955533, G=3.999843853973347, Q=0.7071752369554196;
+  var K=Math.tan(Math.PI*f0/fs), Vh=Math.pow(10,G/20), Vb=Math.pow(Vh,0.4996667741545416);
+  var a0=1+K/Q+K*K;
+  var pre={b:[(Vh+Vb*K/Q+K*K)/a0, 2*(K*K-Vh)/a0, (Vh-Vb*K/Q+K*K)/a0],
+           a:[1, 2*(K*K-1)/a0, (1-K/Q+K*K)/a0]};
+  f0=38.13547087602444; Q=0.5003270373238773; K=Math.tan(Math.PI*f0/fs);
+  var d=1+K/Q+K*K;
+  return {pre:pre, rlb:{b:[1,-2,1], a:[1, 2*(K*K-1)/d, (1-K/Q+K*K)/d]}};
+}
+function biq(x,b,a){
+  var y=new Float32Array(x.length), x1=0,x2=0,y1=0,y2=0;
+  for(var n=0;n<x.length;n++){
+    var x0=x[n], y0=b[0]*x0+b[1]*x1+b[2]*x2-a[1]*y1-a[2]*y2;
+    x2=x1; x1=x0; y2=y1; y1=y0; y[n]=y0;
+  }
+  return y;
+}
+function measureLufs(chans, sr){
+  if(!chans.length || chans[0].length < sr*0.4) return null;
+  var c=kCoeffs(sr);
+  var K=[];
+  for(var ci=0;ci<chans.length && ci<2;ci++) K.push(biq(biq(chans[ci],c.pre.b,c.pre.a), c.rlb.b, c.rlb.a));
+  var blk=Math.round(0.4*sr), step=Math.round(0.1*sr);
+  var n=Math.floor((K[0].length-blk)/step)+1;
+  if(n<1) return null;
+  var z=[], L=[];
+  for(var j=0;j<n;j++){
+    var s=[], t=0;
+    for(var k=0;k<K.length;k++){
+      var acc=0, o=j*step, ch=K[k];
+      for(var i=0;i<blk;i++){ var v=ch[o+i]; acc+=v*v; }
+      s.push(acc/blk); t+=acc/blk;
+    }
+    z.push(s); L.push(-0.691+10*Math.log10(t||1e-30));
+  }
+  var keep=[]; for(var q=0;q<n;q++) if(L[q]>-70) keep.push(q);
+  if(!keep.length) return null;
+  function meanOf(idx){
+    var t=0;
+    for(var k2=0;k2<K.length;k2++){
+      var m=0; for(var w=0;w<idx.length;w++) m+=z[idx[w]][k2];
+      t += m/idx.length;
+    }
+    return -0.691+10*Math.log10(t||1e-30);
+  }
+  var rel=meanOf(keep)-10;
+  var keep2=keep.filter(function(j2){ return L[j2]>rel; });
+  if(!keep2.length) return null;
+  return meanOf(keep2);
+}
+/* 잰 뒤 -14 LUFS 로 올리고, 봉우리가 -1.0 dBFS 를 넘지 않게 눌러 둔다 */
+function applyGain(out){
+  var chans=[]; for(var c=0;c<out.numberOfChannels;c++) chans.push(out.getChannelData(c));
+  var I=measureLufs(chans, out.sampleRate);
+  state.srcLufs=I;
+  if(I===null){ state.outLufs=null; return; }
+  var g=Math.pow(10,(TARGET_LUFS-I)/20);
+  var pk=0;
+  for(var c2=0;c2<chans.length;c2++){
+    var a=chans[c2];
+    for(var i=0;i<a.length;i++){ var v=Math.abs(a[i]); if(v>pk) pk=v; }
+  }
+  if(pk*g > TARGET_PEAK) g = TARGET_PEAK/(pk||1);     /* 찌그러지지 않게 */
+  for(var c3=0;c3<chans.length;c3++){
+    var b=chans[c3];
+    for(var k=0;k<b.length;k++) b[k]*=g;
+  }
+  state.outLufs = I + 20*Math.log10(g);
 }
 
 /* MP3 만들기 — 화면이 멈추지 않도록 조금씩 나눠서 */
@@ -948,7 +1197,20 @@ function toWav(ab){
 
 /* ===== 시작 ===== */
 loadHave(); drawKeys(); refresh();
+
+/* 파형 끌기 — 마우스와 손가락 둘 다 */
+(function(){
+  var cv=document.getElementById('wav');
+  if(!cv) return;
+  cv.addEventListener('mousedown', wavDown);
+  cv.addEventListener('touchstart', wavDown, {passive:false});
+  window.addEventListener('mousemove', wavMove);
+  window.addEventListener('touchmove', wavMove, {passive:false});
+  window.addEventListener('mouseup', wavUp);
+  window.addEventListener('touchend', wavUp);
+  window.addEventListener('resize', function(){ if(state.buf) drawWave(); });
+})();
 </script>
-<div id="toolver" style="margin:22px auto 28px;max-width:760px;text-align:center;color:#8a93a6;font-size:12px;line-height:1.8">반주(MR) 변경툴 <b style="color:#2f6fde">v1.2.0</b> &middot; 2026-11-21<br>조 바꾸기 · 빠르기만 바꾸기</div>
+<div id="toolver" style="margin:22px auto 28px;max-width:760px;text-align:center;color:#8a93a6;font-size:12px;line-height:1.8">반주(MR) 변경툴 <b style="color:#2f6fde">v1.3.0</b> &middot; 2026-11-21<br>자르기 · 조 바꾸기 · 빠르기 · 음량 맞추기</div>
 </body>
 </html>
